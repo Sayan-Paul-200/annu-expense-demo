@@ -1,0 +1,52 @@
+@import '@mantine/core/styles.css';
+
+/* Global variables and typography */
+:root {
+  --font-inter: 'Inter', sans-serif;
+  --font-outfit: 'Outfit', sans-serif;
+}
+
+body {
+  font-family: var(--font-inter);
+  background-color: var(--mantine-color-gray-0);
+  margin: 0;
+  padding: 0;
+}
+
+.brandText {
+  font-family: var(--font-outfit);
+}
+
+.sidebarLink {
+  font-size: 15px;
+}
+
+.sidebarSubLink {
+  font-size: 14px;
+}
+
+.tableText {
+  font-size: 12px;
+  line-height: 13px;
+}
+
+.formLabel {
+  font-size: 13px;
+}
+
+/* Presentation Animations */
+@keyframes cascadeFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cascade-animate {
+  opacity: 0;
+  animation: cascadeFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
