@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { SimpleGrid, Grid, Stack, Box, Group, Title, Button, LoadingOverlay } from '@mantine/core';
+import { SimpleGrid, Grid, Stack, Box, Group, Title, Button, LoadingOverlay, Flex } from '@mantine/core';
 import { 
   IconFileInvoice, 
   IconReceiptTax, 
@@ -74,7 +74,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <Stack gap="lg" p="md" style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
+    <Stack gap="lg" style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
       
       <Group justify="space-between" align="center" className="cascade-animate" style={{ animationDelay: '0.1s' }}>
         <Box>
@@ -108,9 +108,15 @@ export default function AdminDashboard() {
         />
       </Box>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 6 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, xs: 2, md: 3, lg: 6 }} spacing="xs">
         {kpiData.map((kpi, index) => (
-          <Box key={index} className="cascade-animate" style={{ animationDelay: `${0.3 + index * 0.05}s` }}>
+          <Box 
+            key={index} 
+            className="cascade-animate" 
+            style={{ 
+              animationDelay: `${0.3 + index * 0.05}s`,
+            }}
+          >
             {loading ? (
               <ChartSkeleton type="kpi" />
             ) : (

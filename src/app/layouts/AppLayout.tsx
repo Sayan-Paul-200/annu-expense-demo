@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppShell, Burger, Group, Title, ActionIcon, Box, Button, Avatar, ThemeIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { IconSettings, IconDownload, IconLayoutDashboard } from '@tabler/icons-react';
+import { IconSettings, IconSparkle2, IconLayoutDashboard } from '@tabler/icons-react';
 import { Sidebar } from '../components/Navbar/Sidebar';
 import { BottomNav } from '../components/Navbar/BottomNav';
 import { useAppState } from '../../lib/appState';
@@ -35,6 +35,7 @@ export function AppLayout() {
 
   return (
     <AppShell
+      layout="alt"
       header={{ height: 60 }}
       navbar={{
         width: 240,
@@ -63,7 +64,7 @@ export function AppLayout() {
               color="blue" 
               radius="xl" 
               size="sm"
-              leftSection={<IconDownload size={16} />}
+              leftSection={<IconSparkle2 size={16} />}
               style={{ borderColor: '#3B82F6', color: '#3B82F6' }}
               onClick={openDrawer}
             >

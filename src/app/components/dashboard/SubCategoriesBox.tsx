@@ -21,9 +21,9 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
           Sub-Categories Breakdown
         </Title>
       </Box>
-
-      <ScrollArea style={{ flex: 1 }} px="md" type="hover" offsetScrollbars>
-        <Box pb="xs">
+ 
+      <ScrollArea style={{ flex: 1, minHeight: 0 }} px="md" type="hover">
+        <Box pb="xl">
           {items.map((item, index) => (
             <Group
               key={index}
@@ -36,10 +36,10 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
                 marginBottom: '8px',
               }}
             >
-              <Group gap="xs" wrap="nowrap">
+              <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
                 <Text size="sm">{item.icon}</Text>
-                <Box>
-                  <Text size="sm" fw={500} c="#374151" truncate style={{ maxWidth: '140px', lineHeight: 1.2 }}>
+                <Box style={{ flex: 1, minWidth: 0 }}>
+                  <Text size="sm" fw={500} c="#374151" style={{ lineHeight: 1.2 }}>
                     {item.label}
                   </Text>
                   <Text size="xs" c="dimmed" style={{ fontSize: '10px' }}>
@@ -52,6 +52,7 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
                   backgroundColor: '#FEF3C7',
                   padding: '2px 8px',
                   borderRadius: '12px',
+                  flexShrink: 0,
                 }}
               >
                 <Text size="xs" fw={700} c="#111827">
@@ -62,8 +63,8 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
           ))}
         </Box>
       </ScrollArea>
-
-      <Box p="md" mt="auto" style={{ backgroundColor: '#F3F4F6', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+ 
+      <Box p="md" style={{ backgroundColor: '#F3F4F6', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px', flexShrink: 0 }}>
         <Group justify="space-between">
           <Text size="sm" fw={700} c="#111827">
             Total

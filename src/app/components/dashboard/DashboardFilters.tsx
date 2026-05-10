@@ -29,8 +29,8 @@ export function DashboardFilters({
   const [opened, { toggle }] = useDisclosure(false);
 
   return (
-    <Box mb="md">
-      <Group justify="space-between" mb="sm" hiddenFrom="md">
+    <Box>
+      <Group justify="space-between" hiddenFrom="md">
         <Button variant="light" color="blue" onClick={toggle} leftSection={<IconFilter size={16} />}>
           Filters
         </Button>
@@ -46,19 +46,19 @@ export function DashboardFilters({
           <Select
             placeholder="All Business Units"
             data={businessUnits}
-            style={{ flex: 1, minWidth: 150 }}
+            style={{ flex: '1 1 180px' }}
             clearable
           />
           <Select
             placeholder="All Projects"
             data={projects}
-            style={{ flex: 1, minWidth: 150 }}
+            style={{ flex: '1 1 180px' }}
             clearable
           />
           <Select
             placeholder="All States"
             data={states}
-            style={{ flex: 1, minWidth: 150 }}
+            style={{ flex: '1 1 180px' }}
             clearable
           />
           <Select
@@ -66,7 +66,7 @@ export function DashboardFilters({
             data={categories}
             value={selectedCategory}
             onChange={onCategoryChange}
-            style={{ flex: 1, minWidth: 150 }}
+            style={{ flex: '1 1 180px' }}
             clearable
           />
           
@@ -76,7 +76,7 @@ export function DashboardFilters({
               data={subCategories[selectedCategory] || []}
               value={selectedSubCategory}
               onChange={onSubCategoryChange}
-              style={{ flex: 1, minWidth: 150 }}
+              style={{ flex: '1 1 180px' }}
               clearable
             />
           )}
@@ -85,13 +85,14 @@ export function DashboardFilters({
             type="range"
             placeholder="Select Date Range or FY"
             leftSection={<IconCalendar size={16} color="gray" />}
-            style={{ flex: 1.5, minWidth: 220 }}
+            style={{ flex: '1 1 250px' }}
             clearable
           />
           <Button 
             variant="light" 
             color="gray" 
             leftSection={<IconX size={16} />}
+            style={{ flex: '0 0 auto' }}
             onClick={() => {
               onCategoryChange(null);
               onSubCategoryChange(null);

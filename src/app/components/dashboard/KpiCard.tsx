@@ -18,21 +18,22 @@ export function KpiCard({ title, value, icon, color = 'blue', isCurrency = false
     : value;
 
   return (
-    <Paper withBorder p="md" radius="md" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-      <Group justify="space-between" align="center" wrap="nowrap">
-        <Box>
-          <Text size="sm" c="#4B5563" fw={500}>
+    <Paper withBorder p="xs" radius="md" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', minWidth: 0 }}>
+      <Group justify="space-between" align="center" wrap="nowrap" gap={4}>
+        <Box style={{ flex: 1, minWidth: 0 }}>
+          <Text size="xs" c="#4B5563" fw={500} truncate>
             {title}
           </Text>
-          <Text fw={600} size="lg" mt={4} style={{ color: '#1F2937' }}>
+          <Text fw={700} size="sm" mt={2} style={{ color: '#1F2937', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {formattedValue}
           </Text>
         </Box>
         <ThemeIcon
           color={color}
           variant="light"
-          size={40}
+          size={32}
           radius="md"
+          style={{ flexShrink: 0 }}
         >
           {icon}
         </ThemeIcon>
