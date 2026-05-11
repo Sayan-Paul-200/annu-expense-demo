@@ -7,24 +7,54 @@ interface DashboardFiltersProps {
   businessUnits: string[];
   projects: string[];
   states: string[];
+  statuses?: string[];
   categories: string[];
   subCategories: Record<string, string[]>;
+  selectedBusinessUnit?: string | null;
+  onBusinessUnitChange?: (value: string | null) => void;
+  businessUnitPlaceholder?: string;
+  selectedProject?: string | null;
+  onProjectChange?: (value: string | null) => void;
+  projectPlaceholder?: string;
+  selectedState?: string | null;
+  onStateChange?: (value: string | null) => void;
+  statePlaceholder?: string;
+  selectedStatus?: string | null;
+  onStatusChange?: (value: string | null) => void;
   selectedCategory: string | null;
   onCategoryChange: (value: string | null) => void;
   selectedSubCategory: string | null;
   onSubCategoryChange: (value: string | null) => void;
+  selectedDateRange?: [string | null, string | null];
+  onDateRangeChange?: (value: [string | null, string | null]) => void;
+  onClear?: () => void;
 }
 
 export function DashboardFilters({ 
   businessUnits, 
   projects, 
   states, 
+  statuses,
   categories, 
   subCategories,
+  selectedBusinessUnit,
+  onBusinessUnitChange,
+  businessUnitPlaceholder = 'All Business Units',
+  selectedProject,
+  onProjectChange,
+  projectPlaceholder = 'All Projects',
+  selectedState,
+  onStateChange,
+  statePlaceholder = 'All States',
+  selectedStatus,
+  onStatusChange,
   selectedCategory,
   onCategoryChange,
   selectedSubCategory,
-  onSubCategoryChange
+  onSubCategoryChange,
+  selectedDateRange,
+  onDateRangeChange,
+  onClear,
 }: DashboardFiltersProps) {
   const [opened, { toggle }] = useDisclosure(false);
 
@@ -43,24 +73,46 @@ export function DashboardFilters({
       {/* On desktop, always show. On mobile, controlled by Collapse */}
       <Box display={{ base: opened ? 'block' : 'none', md: 'block' }}>
         <Group align="flex-end" gap="sm">
-          <Select
-            placeholder="All Business Units"
-            data={businessUnits}
-            style={{ flex: '1 1 180px' }}
-            clearable
-          />
-          <Select
-            placeholder="All Projects"
-            data={projects}
-            style={{ flex: '1 1 180px' }}
-            clearable
-          />
-          <Select
-            placeholder="All States"
-            data={states}
-            style={{ flex: '1 1 180px' }}
-            clearable
-          />
+          {businessUnits.length > 0 && (
+            <Select
+              placeholder={businessUnitPlaceholder}
+              data={businessUnits}
+              value={selectedBusinessUnit}
+              onChange={onBusinessUnitChange}
+              style={{ flex: '1 1 180px' }}
+              clearable
+            />
+          )}
+          {projects.length > 0 && (
+            <Select
+              placeholder={projectPlaceholder}
+              data={projects}
+              value={selectedProject}
+              onChange={onProjectChange}
+              style={{ flex: '1 1 180px' }}
+              clearable
+            />
+          )}
+          {states.length > 0 && (
+            <Select
+              placeholder={statePlaceholder}
+              data={states}
+              value={selectedState}
+              onChange={onStateChange}
+              style={{ flex: '1 1 180px' }}
+              clearable
+            />
+          )}
+          {statuses && statuses.length > 0 && (
+            <Select
+              placeholder="All Statuses"
+              data={statuses}
+              value={selectedStatus}
+              onChange={onStatusChange}
+              style={{ flex: '1 1 180px' }}
+              clearable
+            />
+          )}
           <Select
             placeholder="All Categories"
             data={categories}
@@ -85,6 +137,8 @@ export function DashboardFilters({
             type="range"
             placeholder="Select Date Range or FY"
             leftSection={<IconCalendar size={16} color="gray" />}
+            value={selectedDateRange}
+            onChange={onDateRangeChange}
             style={{ flex: '1 1 250px' }}
             clearable
           />
@@ -94,8 +148,12 @@ export function DashboardFilters({
             leftSection={<IconX size={16} />}
             style={{ flex: '0 0 auto' }}
             onClick={() => {
-              onCategoryChange(null);
-              onSubCategoryChange(null);
+              if (onClear) {
+                onClear();
+              } else {
+                onCategoryChange(null);
+                onSubCategoryChange(null);
+              }
             }}
           >
             Clear

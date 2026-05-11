@@ -7,7 +7,9 @@ export function generateRouterConfig(routes: AppRoute[]): RouteObject[] {
 
   const processRoutes = (routeList: AppRoute[], parentPath = '') => {
     routeList.forEach((route) => {
-      const fullPath = `${parentPath}${route.path}`.replace(/\/+/g, '/');
+      const fullPath = route.path.startsWith('/')
+        ? route.path
+        : `${parentPath}/${route.path}`.replace(/\/+/g, '/');
 
       if (route.element) {
         result.push({

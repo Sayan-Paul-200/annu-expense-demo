@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { lazy } from 'react';
 import type { AppRoute } from './types';
 import { 
@@ -8,10 +9,12 @@ import {
   IconShoppingCart, 
   IconCategory, 
   IconUsers, 
-  IconHistory 
+  IconHistory,
+  IconReceiptTax
 } from '@tabler/icons-react';
 
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
+const ExpensesPage = lazy(() => import('../pages/admin/expenses/ExpensesPage'));
 
 export const adminRoutes: AppRoute[] = [
   {
@@ -24,7 +27,30 @@ export const adminRoutes: AppRoute[] = [
     label: 'Invoices',
     path: '/admin/invoices',
     icon: <IconFileInvoice size={20} />,
-    // element: <div />, 
+    // element: <div />,
+  },
+  {
+    label: 'Expenses',
+    path: '/admin/expenses',
+    icon: <IconReceiptTax size={20} />,
+    element: <ExpensesPage />,
+    children: [
+      {
+        label: 'Company Expenses',
+        path: '/admin/expenses/company',
+        element: <ExpensesPage />,
+      },
+      {
+        label: 'Business Unit Expenses',
+        path: '/admin/expenses/business-unit',
+        element: <ExpensesPage />,
+      },
+      {
+        label: 'Project Expenses',
+        path: '/admin/expenses/project',
+        element: <ExpensesPage />,
+      },
+    ],
   },
   {
     label: 'Projects',
