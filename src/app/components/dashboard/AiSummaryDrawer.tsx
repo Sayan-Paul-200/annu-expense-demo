@@ -51,9 +51,9 @@ export function AiSummaryDrawer({ opened, onClose }: AiSummaryDrawerProps) {
             <IconTrendingUp size={14} />
           </ThemeIcon>
           <Box>
-            <Text fw={600} size="sm" c="gray.9">Cash Flow Velocity</Text>
+            <Text fw={600} size="sm" c="gray.9">Budget Utilization Velocity</Text>
             <Text size="sm" c="gray.7" mt={4}>
-              Invoiced amounts have surged by 14% month-over-month in March, while paid amounts are lagging. Expect a cash flow gap of approx. ₹70 Cr in the next 30 days.
+              Utilized budget increased by 23% month-over-month in March, while allotted budget expanded more gradually. Review high-burn projects before the next allocation cycle.
             </Text>
           </Box>
         </Group>

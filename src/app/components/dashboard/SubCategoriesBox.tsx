@@ -24,7 +24,16 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
  
       <ScrollArea style={{ flex: 1, minHeight: 0 }} px="md" type="hover">
         <Box pb="xl">
-          {items.map((item, index) => (
+          {items.length === 0 ? (
+            <Box py="xl" ta="center">
+              <Text size="sm" fw={600} c="#374151">
+                No sub-categories found
+              </Text>
+              <Text size="xs" c="dimmed" mt={4}>
+                Try clearing or widening the dashboard filters.
+              </Text>
+            </Box>
+          ) : items.map((item, index) => (
             <Group
               key={index}
               justify="space-between"
@@ -56,7 +65,7 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
                 }}
               >
                 <Text size="xs" fw={700} c="#111827">
-                  ₹ {item.value.toFixed(2)}
+                  ₹ {item.value.toFixed(2)} Cr
                 </Text>
               </Box>
             </Group>
@@ -70,7 +79,7 @@ export function SubCategoriesBox({ items, totalValue }: SubCategoriesBoxProps) {
             Total
           </Text>
           <Text size="sm" fw={700} c="#111827">
-            ₹ {totalValue.toFixed(2)}
+            ₹ {totalValue.toFixed(2)} Cr
           </Text>
         </Group>
       </Box>

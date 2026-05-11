@@ -30,7 +30,8 @@ export function ProjectBudgetTable({ data }: ProjectBudgetTableProps) {
   };
 
   const rows = data.map((project) => {
-    const utilizationPct = (project.utilized / project.allocated) * 100;
+    const utilizationPct = project.allocated > 0 ? (project.utilized / project.allocated) * 100 : 0;
+    const progressValue = Math.min(utilizationPct, 100);
     const balance = project.allocated - project.utilized;
     
     // Determine progress bar color based on utilization %
@@ -59,7 +60,7 @@ export function ProjectBudgetTable({ data }: ProjectBudgetTableProps) {
           <Group justify="space-between" mb={4}>
             <Text size="xs" fw={600} c={progressColor}>{utilizationPct.toFixed(1)}%</Text>
           </Group>
-          <Progress value={utilizationPct} color={progressColor} size="sm" radius="xl" />
+          <Progress value={progressValue} color={progressColor} size="sm" radius="xl" />
         </Table.Td>
         <Table.Td>
           <Badge color={getStatusColor(project.status)} variant="light">
@@ -94,7 +95,20 @@ export function ProjectBudgetTable({ data }: ProjectBudgetTableProps) {
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {rows}
+            {rows.length > 0 ? rows : (
+              <Table.Tr>
+                <Table.Td colSpan={6}>
+                  <Box py="xl" ta="center">
+                    <Text size="sm" fw={600} c="#374151">
+                      No project budgets found
+                    </Text>
+                    <Text size="xs" c="dimmed" mt={4}>
+                      Try clearing or widening the dashboard filters.
+                    </Text>
+                  </Box>
+                </Table.Td>
+              </Table.Tr>
+            )}
           </Table.Tbody>
         </Table>
       </ScrollArea>

@@ -1,123 +1,379 @@
-const generateSubCategoriesBreakdown = () => {
-  const categoriesMap: Record<string, string[]> = {
-    'Office': ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Legal & Notary Charges', 'Tour & Travel', 'Admin', 'Misc', 'Staff Salary', 'Banking Charges', 'IT Assets'],
-    'Compliance': ['CA Fees', 'Taxes & Duties', 'Project Insurance', 'Labour License', 'Registration Expenses', 'Consultancy Charges'],
-    'Guest House': ['Rent', 'Maintenance', 'Care Taker Salary', 'Guest House Admin Expenses'],
-    'Tender': ['EMD', 'Cost of Tender Document'],
-    'Vehicle': ['Vehicle EMI', 'Vehicle Diesel', 'Vehicle Fuel'],
-    'Plant & Machinery': ['Equipment EMI', 'Equipment- Diesel', 'Equipment- Insurance', 'Equipment- Maintenance', 'Equipment- Spares', 'Equipment- Transporation', 'Spares- Transporation', 'Equipment - Purchase', 'Equipment - Downpayment'],
-    'Material': ['Supply', 'Primary Transportation', 'Secondary Transportation'],
-    'Services': ['Vendor Payment', 'Right of Way Payment', 'Labour Charges', 'Site Expenses'],
-    'Warehouse': ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Establishment', 'Security', 'IT Assets', 'Labour Charges Loading-Unloading'],
-    'Finance': ['Finance Charges'],
-  };
+export type ExpenseScope = 'company' | 'business-unit' | 'project';
 
-  const colors = ['#e7f5ff', '#ebfbee', '#fff3bf', '#ffe3e3', '#f3d9fa', '#e3fafc', '#fff0f6', '#f4fce3', '#e6fcf5', '#fff4e6'];
-  const icons = ['🏢', '✅', '🏠', '📄', '🚗', '⚙️', '📦', '🛠️', '🏭', '💰'];
+export interface DashboardLedgerRecord {
+  id: string;
+  date: string;
+  monthKey: string;
+  month: string;
+  businessUnit: string;
+  project: string;
+  state: string;
+  category: string;
+  subCategory: string;
+  expenseScope: ExpenseScope;
+  allocatedBudget: number;
+  utilizedBudget: number;
+  expenseAmount: number;
+}
 
-  const breakdown = [];
-  let colorIndex = 0;
-  for (const [cat, subs] of Object.entries(categoriesMap)) {
-    const bgColor = colors[colorIndex % colors.length];
-    const icon = icons[colorIndex % icons.length];
-    for (const sub of subs) {
-      breakdown.push({
-        label: sub,
-        category: cat,
-        value: Math.floor(Math.random() * 50) + 10, // random mock value
-        bgColor,
-        icon,
+export interface DashboardFilterState {
+  businessUnit: string | null;
+  project: string | null;
+  state: string | null;
+  category: string | null;
+  subCategory: string | null;
+  dateRange: [string | null, string | null];
+}
+
+interface SubCategoryBreakdownItem {
+  label: string;
+  category: string;
+  value: number;
+  bgColor: string;
+  icon: string;
+}
+
+interface ProjectBudgetSummary {
+  id: number;
+  name: string;
+  bu: string;
+  allocated: number;
+  utilized: number;
+  status: string;
+}
+
+const CRORE = 10000000;
+
+const monthBuckets = [
+  { key: '2025-10', label: 'Oct', date: '2025-10-15' },
+  { key: '2025-11', label: 'Nov', date: '2025-11-15' },
+  { key: '2025-12', label: 'Dec', date: '2025-12-15' },
+  { key: '2026-01', label: 'Jan', date: '2026-01-15' },
+  { key: '2026-02', label: 'Feb', date: '2026-02-15' },
+  { key: '2026-03', label: 'Mar', date: '2026-03-15' },
+];
+
+const budgetMonthFactors = [1, 1.12, 0.94, 1.24, 1.08, 1.34];
+const utilizationMonthFactors = [0.82, 0.91, 0.78, 1.03, 0.88, 1.12];
+
+const categoryMap: Record<string, string[]> = {
+  Office: ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Legal & Notary Charges', 'Tour & Travel', 'Admin', 'Misc', 'Staff Salary', 'Banking Charges', 'IT Assets'],
+  Compliance: ['CA Fees', 'Taxes & Duties', 'Project Insurance', 'Labour License', 'Registration Expenses', 'Consultancy Charges'],
+  'Guest House': ['Rent', 'Maintenance', 'Care Taker Salary', 'Guest House Admin Expenses'],
+  Tender: ['EMD', 'Cost of Tender Document'],
+  Vehicle: ['Vehicle EMI', 'Vehicle Diesel', 'Vehicle Fuel'],
+  'Plant & Machinery': ['Equipment EMI', 'Equipment- Diesel', 'Equipment- Insurance', 'Equipment- Maintenance', 'Equipment- Spares', 'Equipment- Transporation', 'Spares- Transporation', 'Equipment - Purchase', 'Equipment - Downpayment'],
+  Material: ['Supply', 'Primary Transportation', 'Secondary Transportation'],
+  Services: ['Vendor Payment', 'Right of Way Payment', 'Labour Charges', 'Site Expenses'],
+  Warehouse: ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Establishment', 'Security', 'IT Assets', 'Labour Charges Loading-Unloading'],
+  Finance: ['Finance Charges'],
+};
+
+const categoryStyles = [
+  { bgColor: '#e7f5ff', icon: 'O' },
+  { bgColor: '#ebfbee', icon: 'C' },
+  { bgColor: '#fff3bf', icon: 'G' },
+  { bgColor: '#ffe3e3', icon: 'T' },
+  { bgColor: '#f3d9fa', icon: 'V' },
+  { bgColor: '#e3fafc', icon: 'P' },
+  { bgColor: '#fff0f6', icon: 'M' },
+  { bgColor: '#f4fce3', icon: 'S' },
+  { bgColor: '#e6fcf5', icon: 'W' },
+  { bgColor: '#fff4e6', icon: 'F' },
+];
+
+const projectProfiles = [
+  { project: 'Bharat Net', businessUnit: 'Telecom', states: ['Bihar', 'Jharkhand', 'Madhya Pradesh'], baseBudget: 9.5 * CRORE, utilizationBias: 0.74 },
+  { project: 'NFS', businessUnit: 'Telecom', states: ['Sikkim', 'Nagaland', 'Manipur', 'Mizoram', 'Meghalaya'], baseBudget: 18 * CRORE, utilizationBias: 0.96 },
+  { project: 'GAIL', businessUnit: 'Gas Pipelines', states: ['Delhi', 'Madhya Pradesh', 'Goa'], baseBudget: 12 * CRORE, utilizationBias: 0.71 },
+  { project: 'BGCL', businessUnit: 'Gas Pipelines', states: ['Bihar', 'Jharkhand', 'Delhi'], baseBudget: 7.5 * CRORE, utilizationBias: 0.42 },
+  { project: 'STP', businessUnit: 'Sewerage', states: ['Goa', 'Madhya Pradesh', 'Bihar'], baseBudget: 6 * CRORE, utilizationBias: 0.98 },
+  { project: 'NFS AMC', businessUnit: 'Railways', states: ['Delhi', 'Goa', 'Sikkim'], baseBudget: 5.2 * CRORE, utilizationBias: 0.63 },
+  { project: 'RailTel Yard', businessUnit: 'Railways', states: ['Delhi', 'Madhya Pradesh', 'Jharkhand'], baseBudget: 4.8 * CRORE, utilizationBias: 0.81 },
+  { project: 'City Sewer Grid', businessUnit: 'Sewerage', states: ['Goa', 'Bihar', 'Madhya Pradesh'], baseBudget: 5.6 * CRORE, utilizationBias: 0.69 },
+];
+
+const companyCostCentres = [
+  { project: 'Corporate Office', businessUnit: 'Telecom', state: 'Delhi', category: 'Office', subCategory: 'Rent', baseBudget: 1.4 * CRORE, utilizationBias: 0.82 },
+  { project: 'Finance Shared Services', businessUnit: 'Gas Pipelines', state: 'Delhi', category: 'Finance', subCategory: 'Finance Charges', baseBudget: 0.9 * CRORE, utilizationBias: 0.68 },
+  { project: 'Legal & Compliance', businessUnit: 'Sewerage', state: 'Madhya Pradesh', category: 'Compliance', subCategory: 'Registration Expenses', baseBudget: 0.8 * CRORE, utilizationBias: 0.76 },
+  { project: 'Admin Operations', businessUnit: 'Railways', state: 'Goa', category: 'Office', subCategory: 'Staff Salary', baseBudget: 1.1 * CRORE, utilizationBias: 0.88 },
+  { project: 'Central Procurement', businessUnit: 'Telecom', state: 'Jharkhand', category: 'Office', subCategory: 'Printing & Stationery', baseBudget: 0.55 * CRORE, utilizationBias: 0.61 },
+  { project: 'Tender Desk', businessUnit: 'Gas Pipelines', state: 'Bihar', category: 'Tender', subCategory: 'EMD', baseBudget: 0.72 * CRORE, utilizationBias: 0.73 },
+  { project: 'Guest House Network', businessUnit: 'Railways', state: 'Sikkim', category: 'Guest House', subCategory: 'Maintenance', baseBudget: 0.48 * CRORE, utilizationBias: 0.67 },
+  { project: 'IT Asset Pool', businessUnit: 'Sewerage', state: 'Manipur', category: 'Office', subCategory: 'IT Assets', baseBudget: 0.68 * CRORE, utilizationBias: 0.79 },
+];
+
+const buOperatingProfiles = [
+  { businessUnit: 'Telecom', state: 'Bihar', category: 'Services', subCategory: 'Right of Way Payment', baseBudget: 2.4 * CRORE, utilizationBias: 0.78 },
+  { businessUnit: 'Gas Pipelines', state: 'Madhya Pradesh', category: 'Vehicle', subCategory: 'Vehicle Fuel', baseBudget: 1.7 * CRORE, utilizationBias: 0.69 },
+  { businessUnit: 'Sewerage', state: 'Goa', category: 'Warehouse', subCategory: 'Rent', baseBudget: 1.2 * CRORE, utilizationBias: 0.84 },
+  { businessUnit: 'Railways', state: 'Delhi', category: 'Compliance', subCategory: 'Project Insurance', baseBudget: 1.5 * CRORE, utilizationBias: 0.92 },
+  { businessUnit: 'Telecom', state: 'Nagaland', category: 'Material', subCategory: 'Primary Transportation', baseBudget: 1.9 * CRORE, utilizationBias: 0.72 },
+  { businessUnit: 'Gas Pipelines', state: 'Jharkhand', category: 'Plant & Machinery', subCategory: 'Equipment- Diesel', baseBudget: 1.45 * CRORE, utilizationBias: 0.81 },
+  { businessUnit: 'Sewerage', state: 'Madhya Pradesh', category: 'Services', subCategory: 'Labour Charges', baseBudget: 1.35 * CRORE, utilizationBias: 0.77 },
+  { businessUnit: 'Railways', state: 'Goa', category: 'Vehicle', subCategory: 'Vehicle EMI', baseBudget: 0.95 * CRORE, utilizationBias: 0.65 },
+];
+
+const projectWorkstreams = [
+  { category: 'Material', subCategory: 'Supply', weight: 0.34, utilizationOffset: 0.02 },
+  { category: 'Services', subCategory: 'Vendor Payment', weight: 0.24, utilizationOffset: -0.04 },
+  { category: 'Plant & Machinery', subCategory: 'Equipment- Maintenance', weight: 0.18, utilizationOffset: 0.05 },
+  { category: 'Vehicle', subCategory: 'Vehicle Diesel', weight: 0.11, utilizationOffset: -0.01 },
+  { category: 'Warehouse', subCategory: 'Rent', weight: 0.08, utilizationOffset: 0.03 },
+  { category: 'Compliance', subCategory: 'Labour License', weight: 0.05, utilizationOffset: -0.02 },
+] as const;
+
+function getLedgerDate(baseDate: string, dayOffset: number) {
+  const date = new Date(baseDate);
+  date.setDate(date.getDate() + dayOffset);
+  return date.toISOString().slice(0, 10);
+}
+
+function createLedger(): DashboardLedgerRecord[] {
+  const records: DashboardLedgerRecord[] = [];
+
+  monthBuckets.forEach((month, monthIndex) => {
+    companyCostCentres.forEach((centre, centreIndex) => {
+      const allocatedBudget = Math.round(
+        centre.baseBudget * budgetMonthFactors[monthIndex] * (1 + centreIndex * 0.025)
+      );
+      const utilizedBudget = Math.round(
+        allocatedBudget * Math.min(centre.utilizationBias * utilizationMonthFactors[monthIndex], 1.08)
+      );
+
+      records.push({
+        id: `company-${month.key}-${centreIndex}`,
+        date: getLedgerDate(month.date, (centreIndex % 4) * 3 - 5),
+        monthKey: month.key,
+        month: month.label,
+        businessUnit: centre.businessUnit,
+        project: centre.project,
+        state: centre.state,
+        category: centre.category,
+        subCategory: centre.subCategory,
+        expenseScope: 'company',
+        allocatedBudget,
+        utilizedBudget,
+        expenseAmount: utilizedBudget,
       });
-    }
-    colorIndex++;
-  }
-  return breakdown;
+    });
+
+    buOperatingProfiles.forEach((profile, profileIndex) => {
+      const allocatedBudget = Math.round(
+        profile.baseBudget * budgetMonthFactors[monthIndex] * (1 + profileIndex * 0.02)
+      );
+      const utilizedBudget = Math.round(
+        allocatedBudget * Math.min(profile.utilizationBias * utilizationMonthFactors[monthIndex], 1.1)
+      );
+
+      records.push({
+        id: `bu-${month.key}-${profileIndex}`,
+        date: getLedgerDate(month.date, (profileIndex % 5) * 2 - 4),
+        monthKey: month.key,
+        month: month.label,
+        businessUnit: profile.businessUnit,
+        project: `${profile.businessUnit} Operations`,
+        state: profile.state,
+        category: profile.category,
+        subCategory: profile.subCategory,
+        expenseScope: 'business-unit',
+        allocatedBudget,
+        utilizedBudget,
+        expenseAmount: utilizedBudget,
+      });
+    });
+
+    projectProfiles.forEach((profile, profileIndex) => {
+      projectWorkstreams.forEach((workstream, workstreamIndex) => {
+        const state = profile.states[(monthIndex + workstreamIndex) % profile.states.length];
+        const allocatedBudget = Math.round(
+          profile.baseBudget *
+            workstream.weight *
+            budgetMonthFactors[monthIndex] *
+            (1 + profileIndex * 0.018 + workstreamIndex * 0.012)
+        );
+        const utilizedBudget = Math.round(
+          allocatedBudget *
+            Math.min(profile.utilizationBias * utilizationMonthFactors[monthIndex] + workstream.utilizationOffset, 1.16)
+        );
+
+        records.push({
+          id: `project-${month.key}-${profileIndex}-${workstreamIndex}`,
+          date: getLedgerDate(month.date, (workstreamIndex % 6) * 2 - 5),
+          monthKey: month.key,
+          month: month.label,
+          businessUnit: profile.businessUnit,
+          project: profile.project,
+          state,
+          category: workstream.category,
+          subCategory: workstream.subCategory,
+          expenseScope: 'project',
+          allocatedBudget,
+          utilizedBudget,
+          expenseAmount: utilizedBudget,
+        });
+      });
+    });
+  });
+
+  return records;
+}
+
+export const dashboardLedger = createLedger();
+
+export const dashboardFilters = {
+  businessUnits: Array.from(new Set(dashboardLedger.map((item) => item.businessUnit))).sort(),
+  projects: Array.from(new Set(dashboardLedger.filter((item) => item.expenseScope === 'project').map((item) => item.project))).sort(),
+  states: Array.from(new Set(dashboardLedger.map((item) => item.state))).sort(),
+  categories: Object.keys(categoryMap),
+  subCategories: categoryMap,
+};
+
+function matchesFilters(record: DashboardLedgerRecord, filters: DashboardFilterState) {
+  const [startDate, endDate] = filters.dateRange;
+  const recordTime = new Date(record.date).getTime();
+  const startTime = startDate ? new Date(startDate).getTime() : null;
+  const endTime = endDate ? new Date(endDate).getTime() : null;
+
+  return (
+    (!filters.businessUnit || record.businessUnit === filters.businessUnit) &&
+    (!filters.project || record.project === filters.project) &&
+    (!filters.state || record.state === filters.state) &&
+    (!filters.category || record.category === filters.category) &&
+    (!filters.subCategory || record.subCategory === filters.subCategory) &&
+    (!startTime || recordTime >= startTime) &&
+    (!endTime || recordTime <= endTime)
+  );
+}
+
+function toCrores(value: number) {
+  return Number((value / CRORE).toFixed(1));
+}
+
+function groupSubCategories(records: DashboardLedgerRecord[]): SubCategoryBreakdownItem[] {
+  const grouped = new Map<string, { category: string; label: string; value: number }>();
+
+  records.forEach((record) => {
+    const key = `${record.category}:${record.subCategory}`;
+    const current = grouped.get(key) ?? { category: record.category, label: record.subCategory, value: 0 };
+    current.value += record.expenseAmount;
+    grouped.set(key, current);
+  });
+
+  return Array.from(grouped.values())
+    .map((item) => {
+      const categoryIndex = dashboardFilters.categories.indexOf(item.category);
+      const style = categoryStyles[Math.max(categoryIndex, 0) % categoryStyles.length];
+      return {
+        label: item.label,
+        category: item.category,
+        value: toCrores(item.value),
+        bgColor: style.bgColor,
+        icon: style.icon,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
+}
+
+function groupTopCategories(records: DashboardLedgerRecord[]) {
+  const grouped = new Map<string, number>();
+
+  records.forEach((record) => {
+    grouped.set(record.category, (grouped.get(record.category) ?? 0) + record.expenseAmount);
+  });
+
+  return Array.from(grouped.entries())
+    .map(([name, value]) => ({ name, value: toCrores(value) }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 5);
+}
+
+function buildBudgetTrend(records: DashboardLedgerRecord[]) {
+  return monthBuckets.map((month) => {
+    const monthRecords = records.filter((record) => record.monthKey === month.key);
+    return {
+      month: month.label,
+      allottedBudget: toCrores(monthRecords.reduce((sum, record) => sum + record.allocatedBudget, 0)),
+      utilizedBudget: toCrores(monthRecords.reduce((sum, record) => sum + record.utilizedBudget, 0)),
+    };
+  });
+}
+
+function buildProjectBudgets(records: DashboardLedgerRecord[]): ProjectBudgetSummary[] {
+  const grouped = new Map<string, { name: string; bu: string; allocated: number; utilized: number }>();
+
+  records
+    .filter((record) => record.expenseScope === 'project')
+    .forEach((record) => {
+      const current = grouped.get(record.project) ?? {
+        name: record.project,
+        bu: record.businessUnit,
+        allocated: 0,
+        utilized: 0,
+      };
+      current.allocated += record.allocatedBudget;
+      current.utilized += record.utilizedBudget;
+      grouped.set(record.project, current);
+    });
+
+  return Array.from(grouped.values())
+    .map((project, index) => {
+      const utilizationPct = project.allocated > 0 ? (project.utilized / project.allocated) * 100 : 0;
+      let status = 'On Track';
+      if (utilizationPct > 95 || project.utilized > project.allocated) status = 'Critical';
+      else if (utilizationPct > 85) status = 'At Risk';
+
+      return {
+        id: index + 1,
+        ...project,
+        status,
+      };
+    })
+    .sort((a, b) => b.utilized - a.utilized);
+}
+
+export function deriveDashboardData(filters: DashboardFilterState) {
+  const filteredRecords = dashboardLedger.filter((record) => matchesFilters(record, filters));
+  const projectRecords = filteredRecords.filter((record) => record.expenseScope === 'project');
+  const projectAllocatedBudget = projectRecords.reduce((sum, record) => sum + record.allocatedBudget, 0);
+  const projectUtilizedBudget = projectRecords.reduce((sum, record) => sum + record.utilizedBudget, 0);
+  const grandTotalExpense = filteredRecords.reduce((sum, record) => sum + record.expenseAmount, 0);
+
+  return {
+    records: filteredRecords,
+    kpis: {
+      grandTotalExpense,
+      companyTotalExpense: filteredRecords
+        .filter((record) => record.expenseScope === 'company')
+        .reduce((sum, record) => sum + record.expenseAmount, 0),
+      businessUnitTotalExpense: filteredRecords
+        .filter((record) => record.expenseScope === 'business-unit')
+        .reduce((sum, record) => sum + record.expenseAmount, 0),
+      totalProjectBudget: projectAllocatedBudget,
+      utilizedBudget: projectUtilizedBudget,
+      balanceBudget: projectAllocatedBudget - projectUtilizedBudget,
+    },
+    subCategoryBreakdown: groupSubCategories(filteredRecords),
+    totalSubCategoryValue: toCrores(grandTotalExpense),
+    charts: {
+      expenseTrend: buildBudgetTrend(filteredRecords),
+      topCategories: groupTopCategories(filteredRecords),
+    },
+    projectBudgets: buildProjectBudgets(filteredRecords),
+  };
+}
+
+export const emptyDashboardFilters: DashboardFilterState = {
+  businessUnit: null,
+  project: null,
+  state: null,
+  category: null,
+  subCategory: null,
+  dateRange: [null, null],
 };
 
 export const dummyDashboardData = {
-  kpis: {
-    invoiceBasicValue: 2693389705.63,
-    invoiceGstAmount: 324120281.14,
-    totalInvoiceAmount: 3017509986.77,
-    netPayable: 3017509844.77,
-    totalPaidByClient: 188307932.84,
-    balancePending: 2829201911.93,
-  },
-  subCategoryBreakdown: generateSubCategoriesBreakdown(),
-  totalSubCategoryValue: 1420.0,
-  charts: {
-    expenseTrend: [
-      { month: 'Oct', invoiced: 420.5, paid: 380.0 },
-      { month: 'Nov', invoiced: 480.2, paid: 410.5 },
-      { month: 'Dec', invoiced: 510.8, paid: 460.2 },
-      { month: 'Jan', invoiced: 390.4, paid: 450.0 },
-      { month: 'Feb', invoiced: 620.1, paid: 520.8 },
-      { month: 'Mar', invoiced: 710.9, paid: 640.5 },
-    ],
-    topCategories: [
-      { name: 'Material', value: 450.5 },
-      { name: 'Services', value: 380.2 },
-      { name: 'Plant & Mach.', value: 290.8 },
-      { name: 'Office', value: 150.4 },
-      { name: 'Vehicle', value: 95.0 },
-    ],
-    statusDistribution: [
-      { name: 'Paid', value: 18.8, percentage: 6.2, color: '#22C55E' },
-      { name: 'Cancelled', value: 90.9, percentage: 30.1, color: '#EF4444' },
-      { name: 'Under Process', value: 99.7, percentage: 33.0, color: '#F59E0B' },
-      { name: 'Credit Note Issued', value: 92.4, percentage: 30.6, color: '#3B82F6' },
-    ],
-    stateWiseAmount: [
-      { state: 'State 1', amount: 35 },
-      { state: 'State 2', amount: 50 },
-      { state: 'State 3', amount: 30 },
-      { state: 'State 4', amount: 40 },
-      { state: 'State 5', amount: 35 },
-      { state: 'State 6', amount: 30 },
-      { state: 'State 7', amount: 32 },
-    ],
-    ageing: [
-      { range: '0-15 Days', invoiceDate: 20, submissionDate: 15 },
-      { range: '16-30 Days', invoiceDate: 35, submissionDate: 25 },
-      { range: '31-45 Days', invoiceDate: 15, submissionDate: 10 },
-      { range: '45+ Days', invoiceDate: 10, submissionDate: 5 },
-    ],
-  },
-  filters: {
-    businessUnits: ['Telecom', 'Gas Pipelines', 'Sewerage', 'Railways'],
-    projects: ['BGCL', 'Bharat Net', 'GAIL', 'NFS', 'NFS AMC', 'STP'],
-    states: ['Delhi', 'Bihar', 'Sikkim', 'Nagaland', 'Manipur', 'Mizoram', 'Meghalaya', 'Jharkhand', 'Madhya Pradesh', 'Goa'],
-    categories: ['Office', 'Tender', 'Compliance', 'Guest House', 'Vehicle', 'Plant & Machinery', 'Material', 'Services', 'Warehouse', 'Finance'],
-    subCategories: {
-      'Office': ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Legal & Notary Charges', 'Tour & Travel', 'Admin', 'Misc', 'Staff Salary', 'Banking Charges', 'IT Assets'],
-      'Compliance': ['CA Fees', 'Taxes & Duties', 'Project Insurance', 'Labour License', 'Registration Expenses', 'Consultancy Charges'],
-      'Guest House': ['Rent', 'Maintenance', 'Care Taker Salary', 'Guest House Admin Expenses'],
-      'Tender': ['EMD', 'Cost of Tender Document'],
-      'Vehicle': ['Vehicle EMI', 'Vehicle Diesel', 'Vehicle Fuel'],
-      'Plant & Machinery': ['Equipment EMI', 'Equipment- Diesel', 'Equipment- Insurance', 'Equipment- Maintenance', 'Equipment- Spares', 'Equipment- Transporation', 'Spares- Transporation', 'Equipment - Purchase', 'Equipment - Downpayment'],
-      'Material': ['Supply', 'Primary Transportation', 'Secondary Transportation'],
-      'Services': ['Vendor Payment', 'Right of Way Payment', 'Labour Charges', 'Site Expenses'],
-      'Warehouse': ['Rent', 'Security Deposit', 'Electricity Charges', 'Maintenance', 'Printing & Stationery', 'Establishment', 'Security', 'IT Assets', 'Labour Charges Loading-Unloading'],
-      'Finance': ['Finance Charges'],
-    } as Record<string, string[]>,
-  },
-  projectBudgets: [
-    { id: 1, name: 'Bharat Net', bu: 'Telecom', allocated: 50000000, utilized: 45000000, status: 'At Risk' },
-    { id: 2, name: 'GAIL', bu: 'Gas Pipelines', allocated: 85000000, utilized: 60000000, status: 'On Track' },
-    { id: 3, name: 'BGCL', bu: 'Gas Pipelines', allocated: 42000000, utilized: 12000000, status: 'On Track' },
-    { id: 4, name: 'NFS', bu: 'Telecom', allocated: 120000000, utilized: 115000000, status: 'Critical' },
-    { id: 5, name: 'STP', bu: 'Sewerage', allocated: 35000000, utilized: 34500000, status: 'Critical' },
-  ],
-  recentInvoices: [
-    { sNo: 1, invoiceNo: 'test1223456', date: '31/03/2026', basicAmt: 1500.0, gstAmt: 180.0, totalAmt: 1680.0, deduction: 0.0, netPayable: 1680.0, paid: 0.0, pending: 0.0, status: 'Cancelled' },
-    { sNo: 2, invoiceNo: 'test-2', date: '13/02/2026', basicAmt: 100.0, gstAmt: 12.0, totalAmt: 112.0, deduction: 0.0, netPayable: 112.0, paid: 112.0, pending: 0.0, status: 'Paid' },
-    { sNo: 3, invoiceNo: 'cgvsFb', date: '13/02/2026', basicAmt: 1520.0, gstAmt: 273.6, totalAmt: 1793.6, deduction: 0.0, netPayable: 1793.6, paid: 0.0, pending: 0.0, status: 'Cancelled' },
-    { sNo: 4, invoiceNo: 'test-4', date: '12/02/2026', basicAmt: 1000.0, gstAmt: 100.0, totalAmt: 1100.0, deduction: 100.0, netPayable: 1000.0, paid: 1000.0, pending: 0.0, status: 'Declined' },
-    { sNo: 5, invoiceNo: 'hnfg', date: '12/02/2026', basicAmt: 21324.0, gstAmt: 2558.88, totalAmt: 23882.88, deduction: 0.0, netPayable: 23882.88, paid: 0.0, pending: 23882.88, status: 'Under Process' },
-    { sNo: 6, invoiceNo: 'test2', date: '11/02/2026', basicAmt: 103230.0, gstAmt: 18581.4, totalAmt: 121811.4, deduction: 10.0, netPayable: 121801.4, paid: 121801.4, pending: 0.0, status: 'Declined' },
-    { sNo: 7, invoiceNo: 'cancel', date: '08/02/2026', basicAmt: 123543.0, gstAmt: 0.0, totalAmt: 123543.0, deduction: 0.0, netPayable: 123543.0, paid: 0.0, pending: 0.0, status: 'Cancelled' },
-    { sNo: 8, invoiceNo: 'dv', date: '07/02/2026', basicAmt: 1502.0, gstAmt: 150.2, totalAmt: 1652.2, deduction: 0.0, netPayable: 1652.2, paid: 0.0, pending: 0.0, status: 'Cancelled' },
-    { sNo: 9, invoiceNo: 'credit', date: '06/02/2026', basicAmt: 14356.0, gstAmt: 0.0, totalAmt: 14356.0, deduction: 0.0, netPayable: 14356.0, paid: 0.0, pending: 0.0, status: 'Credit Note Issued' },
-    { sNo: 10, invoiceNo: 'Balance', date: '06/02/2026', basicAmt: 15820.0, gstAmt: 4429.6, totalAmt: 20249.6, deduction: 0.0, netPayable: 20249.6, paid: 0.0, pending: 20249.6, status: 'Under Process' },
-  ]
+  filters: dashboardFilters,
+  ...deriveDashboardData(emptyDashboardFilters),
 };

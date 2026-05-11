@@ -11,7 +11,12 @@ import {
 } from '@tabler/icons-react';
 import { useDisclosure } from '@mantine/hooks';
 
-import { dummyDashboardData } from './dummyData';
+import {
+  deriveDashboardData,
+  dummyDashboardData,
+  emptyDashboardFilters,
+  type DashboardFilterState,
+} from './dummyData';
 import { KpiCard } from '../../components/dashboard/KpiCard';
 import { DashboardFilters } from '../../components/dashboard/DashboardFilters';
 import { SubCategoriesBox } from '../../components/dashboard/SubCategoriesBox';
@@ -24,8 +29,10 @@ import { CreateInvoiceModal } from '../../components/dashboard/CreateInvoiceModa
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+  const [dashboardFilters, setDashboardFilters] = useState<DashboardFilterState>(() => ({
+    ...emptyDashboardFilters,
+    dateRange: [...emptyDashboardFilters.dateRange],
+  }));
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
 
   // Simulated initial loading state
@@ -34,43 +41,27 @@ export default function AdminDashboard() {
     return () => clearTimeout(timer);
   }, []);
 
+  const applyFilterChange = (updates: Partial<DashboardFilterState>) => {
+    setIsFiltering(true);
+    setDashboardFilters((current) => ({ ...current, ...updates }));
+    setTimeout(() => setIsFiltering(false), 600);
+  };
+
   const handleCategoryChange = (val: string | null) => {
-    setIsFiltering(true);
-    setSelectedCategory(val);
-    setSelectedSubCategory(null);
-    setTimeout(() => setIsFiltering(false), 600);
+    applyFilterChange({ category: val, subCategory: null });
   };
 
-  const onSubCategoryChange = (val: string | null) => {
-    setIsFiltering(true);
-    setSelectedSubCategory(val);
-    setTimeout(() => setIsFiltering(false), 600);
-  };
-
-  const filteredSubCategories = useMemo(() => {
-    return dummyDashboardData.subCategoryBreakdown.filter(item => {
-      let matches = true;
-      if (selectedCategory) {
-        matches = matches && item.category === selectedCategory;
-      }
-      if (selectedSubCategory) {
-        matches = matches && item.label === selectedSubCategory;
-      }
-      return matches;
-    });
-  }, [selectedCategory, selectedSubCategory]);
-
-  const filteredSubCategoryTotal = useMemo(() => {
-    return filteredSubCategories.reduce((sum, item) => sum + item.value, 0);
-  }, [filteredSubCategories]);
+  const derivedDashboardData = useMemo(() => {
+    return deriveDashboardData(dashboardFilters);
+  }, [dashboardFilters]);
 
   const kpiData = [
-    { title: 'Grand Total Expense', value: dummyDashboardData.kpis.invoiceBasicValue, icon: <IconFileInvoice size={24} />, color: 'blue' },
-    { title: 'Company Total Expense', value: dummyDashboardData.kpis.invoiceGstAmount, icon: <IconReceiptTax size={24} />, color: 'green' },
-    { title: 'Total B.U. Expense', value: dummyDashboardData.kpis.totalInvoiceAmount, icon: <IconDatabase size={24} />, color: 'grape' },
-    { title: 'Total Project Budget', value: dummyDashboardData.kpis.netPayable, icon: <IconCoinRupee size={24} />, color: 'cyan' },
-    { title: 'Utilized Budget', value: dummyDashboardData.kpis.totalPaidByClient, icon: <IconCheckbox size={24} />, color: 'lime' },
-    { title: 'Balance Budget', value: dummyDashboardData.kpis.balancePending, icon: <IconCalendarDue size={24} />, color: 'red' },
+    { title: 'Grand Total Expense', value: derivedDashboardData.kpis.grandTotalExpense, icon: <IconFileInvoice size={24} />, color: 'blue' },
+    { title: 'Company Total Expense', value: derivedDashboardData.kpis.companyTotalExpense, icon: <IconReceiptTax size={24} />, color: 'green' },
+    { title: 'Total B.U. Expense', value: derivedDashboardData.kpis.businessUnitTotalExpense, icon: <IconDatabase size={24} />, color: 'grape' },
+    { title: 'Total Project Budget', value: derivedDashboardData.kpis.totalProjectBudget, icon: <IconCoinRupee size={24} />, color: 'cyan' },
+    { title: 'Utilized Budget', value: derivedDashboardData.kpis.utilizedBudget, icon: <IconCheckbox size={24} />, color: 'lime' },
+    { title: 'Balance Budget', value: derivedDashboardData.kpis.balanceBudget, icon: <IconCalendarDue size={24} />, color: 'red' },
   ];
 
   return (
@@ -101,10 +92,19 @@ export default function AdminDashboard() {
           states={dummyDashboardData.filters.states}
           categories={dummyDashboardData.filters.categories}
           subCategories={dummyDashboardData.filters.subCategories}
-          selectedCategory={selectedCategory}
+          selectedBusinessUnit={dashboardFilters.businessUnit}
+          onBusinessUnitChange={(value) => applyFilterChange({ businessUnit: value })}
+          selectedProject={dashboardFilters.project}
+          onProjectChange={(value) => applyFilterChange({ project: value })}
+          selectedState={dashboardFilters.state}
+          onStateChange={(value) => applyFilterChange({ state: value })}
+          selectedCategory={dashboardFilters.category}
           onCategoryChange={handleCategoryChange}
-          selectedSubCategory={selectedSubCategory}
-          onSubCategoryChange={onSubCategoryChange}
+          selectedSubCategory={dashboardFilters.subCategory}
+          onSubCategoryChange={(value) => applyFilterChange({ subCategory: value })}
+          selectedDateRange={dashboardFilters.dateRange}
+          onDateRangeChange={(value) => applyFilterChange({ dateRange: value })}
+          onClear={() => applyFilterChange({ ...emptyDashboardFilters, dateRange: [null, null] })}
         />
       </Box>
 
@@ -141,25 +141,25 @@ export default function AdminDashboard() {
               <ChartSkeleton type="deductions" />
             ) : (
               <SubCategoriesBox 
-                items={filteredSubCategories} 
-                totalValue={filteredSubCategoryTotal} 
+                items={derivedDashboardData.subCategoryBreakdown} 
+                totalValue={derivedDashboardData.totalSubCategoryValue} 
               />
             )}
           </Grid.Col>
           
           <Grid.Col span={{ base: 12, md: 8, lg: 6 }} className="cascade-animate" style={{ animationDelay: '0.7s' }}>
             {loading ? (
-              <ChartSkeleton type="bar" />
+              <ChartSkeleton type="budgetTrend" />
             ) : (
-              <ExpenseTrendAreaChart data={dummyDashboardData.charts.expenseTrend} />
+              <ExpenseTrendAreaChart data={derivedDashboardData.charts.expenseTrend} />
             )}
           </Grid.Col>
 
           <Grid.Col span={{ base: 12, md: 12, lg: 3 }} className="cascade-animate" style={{ animationDelay: '0.8s' }}>
             {loading ? (
-              <ChartSkeleton type="donut" />
+              <ChartSkeleton type="topCategories" />
             ) : (
-              <TopCategoriesBarChart data={dummyDashboardData.charts.topCategories} />
+              <TopCategoriesBarChart data={derivedDashboardData.charts.topCategories} />
             )}
           </Grid.Col>
         </Grid>
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
           {loading ? (
             <ChartSkeleton type="table" />
           ) : (
-            <ProjectBudgetTable data={dummyDashboardData.projectBudgets} />
+            <ProjectBudgetTable data={derivedDashboardData.projectBudgets} />
           )}
         </Box>
       </Box>

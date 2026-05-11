@@ -1,7 +1,7 @@
 import { Paper, Skeleton, Group, Stack, Box } from '@mantine/core';
 
 interface ChartSkeletonProps {
-  type: 'kpi' | 'bar' | 'donut' | 'deductions' | 'table';
+  type: 'kpi' | 'bar' | 'donut' | 'budgetTrend' | 'topCategories' | 'deductions' | 'table';
 }
 
 export function ChartSkeleton({ type }: ChartSkeletonProps) {
@@ -39,6 +39,74 @@ export function ChartSkeleton({ type }: ChartSkeletonProps) {
             <Skeleton height={20} width={80} />
           </Group>
         </Box>
+      </Paper>
+    );
+  }
+
+  if (type === 'budgetTrend') {
+    return (
+      <Paper withBorder p="md" radius="md" style={{ height: '100%', minHeight: 350, display: 'flex', flexDirection: 'column' }}>
+        <Group justify="space-between" mb="md">
+          <Box>
+            <Skeleton height={20} width={280} mb={8} />
+            <Skeleton height={12} width={220} />
+          </Box>
+        </Group>
+        <Group gap="md" mb="lg">
+          <Group gap={6}>
+            <Skeleton height={10} width={10} circle />
+            <Skeleton height={12} width={100} />
+          </Group>
+          <Group gap={6}>
+            <Skeleton height={10} width={10} circle />
+            <Skeleton height={12} width={104} />
+          </Group>
+        </Group>
+        <Box style={{ flex: 1, minHeight: 0, position: 'relative', padding: '12px 8px 18px 26px' }}>
+          <Stack gap={36} style={{ height: '100%' }}>
+            {[...Array(5)].map((_, index) => (
+              <Skeleton key={index} height={1} width="100%" />
+            ))}
+          </Stack>
+          <Box
+            style={{
+              position: 'absolute',
+              left: 32,
+              right: 14,
+              bottom: 42,
+              display: 'flex',
+              alignItems: 'flex-end',
+              gap: '5%',
+              height: '58%',
+            }}
+          >
+            {[72, 78, 84, 88, 94, 100].map((height, index) => (
+              <Box key={index} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', gap: 8 }}>
+                <Skeleton height={4} width="100%" radius="xl" />
+                <Skeleton height={`${height}%`} width="100%" radius="sm" />
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Paper>
+    );
+  }
+
+  if (type === 'topCategories') {
+    return (
+      <Paper withBorder p="md" radius="md" style={{ height: '100%', minHeight: 350, display: 'flex', flexDirection: 'column' }}>
+        <Box mb="lg">
+          <Skeleton height={20} width={180} mb={8} />
+          <Skeleton height={12} width={160} />
+        </Box>
+        <Stack gap="md" style={{ flex: 1, justifyContent: 'center' }}>
+          {[88, 74, 62, 48, 36].map((width, index) => (
+            <Group key={index} wrap="nowrap" gap="sm">
+              <Skeleton height={14} width={76} />
+              <Skeleton height={20} width={`${width}%`} radius="sm" />
+            </Group>
+          ))}
+        </Stack>
       </Paper>
     );
   }

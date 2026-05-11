@@ -20,7 +20,17 @@ interface TopCategoriesBarChartProps {
 
 const COLORS = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981'];
 
-const CustomTooltip = ({ active, payload }: any) => {
+interface CategoryTooltipPayload {
+  payload: CategoryData;
+  value: number;
+}
+
+interface CategoryTooltipProps {
+  active?: boolean;
+  payload?: CategoryTooltipPayload[];
+}
+
+const CustomTooltip = ({ active, payload }: CategoryTooltipProps) => {
   if (active && payload && payload.length) {
     return (
       <Paper p="xs" withBorder shadow="sm" radius="md" style={{ backgroundColor: 'white' }}>
@@ -47,29 +57,40 @@ export function TopCategoriesBarChart({ data }: TopCategoriesBarChartProps) {
       </Group>
 
       <Box style={{ flex: 1, minHeight: 0 }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            data={data}
-            layout="vertical"
-            margin={{ top: 0, right: 20, left: -10, bottom: 0 }}
-          >
-            <XAxis type="number" hide />
-            <YAxis 
-              dataKey="name" 
-              type="category" 
-              axisLine={false} 
-              tickLine={false} 
-              tick={{ fill: '#4B5563', fontSize: 13, fontWeight: 500 }} 
-              width={90}
-            />
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-            <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
-              {data.map((_entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <Box h="100%" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+            <Text size="sm" fw={600} c="#374151">
+              No category spend found
+            </Text>
+            <Text size="xs" c="dimmed" mt={4}>
+              Try clearing or widening the dashboard filters.
+            </Text>
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 0, right: 20, left: -10, bottom: 0 }}
+            >
+              <XAxis type="number" hide />
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#4B5563', fontSize: 13, fontWeight: 500 }} 
+                width={90}
+              />
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+              <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={20}>
+                {data.map((_entry, index) => (
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </Box>
     </Paper>
   );
